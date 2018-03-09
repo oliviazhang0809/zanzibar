@@ -50,7 +50,7 @@ func NewBarArgWithNestedQueryParamsHandler(deps *module.Dependencies) *BarArgWit
 		Clients: deps.Client,
 	}
 	handler.endpoint = zanzibar.NewRouterEndpoint(
-		deps.Default.Logger, deps.Default.Scope,
+		deps.Default.Logger, deps.Default.Scope, deps.Default.Tracer,
 		"bar", "argWithNestedQueryParams",
 		handler.HandleRequest,
 	)
