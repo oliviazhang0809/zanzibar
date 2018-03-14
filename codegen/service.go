@@ -48,8 +48,9 @@ type ModuleSpec struct {
 
 // GoPackageImport ...
 type GoPackageImport struct {
-	PackageName string
-	AliasName   string
+	PackageName    string
+	AliasName      string
+	CompiledModule *compile.Module
 }
 
 // ServiceSpec specifies a service.
@@ -206,6 +207,7 @@ func (ms *ModuleSpec) SetDownstream(
 			"Service %q does not have method %q\n", serviceName, methodName,
 		)
 	}
+
 	serviceMethod, ok := clientSpec.ExposedMethods[clientMethod]
 	if !ok {
 		return errors.Errorf("Client %q does not expose method %q", clientSpec.ClientName, clientMethod)
@@ -246,14 +248,13 @@ func (ms *ModuleSpec) SetDownstream(
 	}
 
 	if method.Downstream != nil && len(headersPropagate) > 0 {
-
 		downstreamMethod, err := findMethodByName(method.Name, method.Downstream.Services)
 		if err != nil {
 			return err
 		}
 		downstreamSpec := downstreamMethod.CompiledThriftSpec
 
-		err = method.setHeaderPropagator(method.ReqHeaders, downstreamSpec, headersPropagate, h, downstreamMethod)
+		err = method.setHeaderPropagator(sortedHeaders(e.ReqHeaders, false), downstreamSpec, headersPropagate, h, downstreamMethod)
 		if err != nil {
 			return err
 		}
@@ -324,10 +325,15 @@ func (ms *ModuleSpec) addTypeImport(thriftPath string, packageHelper *PackageHel
 	}
 
 	if !ms.isPackageIncluded(newPkg) {
+		cms, err := compile.Compile(thriftPath)
+		if err != nil {
+			return err
+		}
 		ms.IncludedPackages = append(
 			ms.IncludedPackages, GoPackageImport{
-				PackageName: newPkg,
-				AliasName:   aliasName,
+				PackageName:    newPkg,
+				AliasName:      aliasName,
+				CompiledModule: cms,
 			},
 		)
 	}

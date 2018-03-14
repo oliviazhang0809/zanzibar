@@ -73,9 +73,6 @@ func (h *SimpleServiceTransHeadersHandler) HandleRequest(
 	req *zanzibar.ServerHTTPRequest,
 	res *zanzibar.ServerHTTPResponse,
 ) {
-	if !req.CheckHeaders([]string{"x-uuid", "x-token"}) {
-		return
-	}
 	var requestBody endpointsBazBaz.SimpleService_TransHeaders_Args
 	if ok := req.ReadAndUnmarshalBody(&requestBody); !ok {
 		return
@@ -88,6 +85,16 @@ func (h *SimpleServiceTransHeadersHandler) HandleRequest(
 
 	// TODO: potential perf issue, use zap.Object lazy serialization
 	zfields = append(zfields, zap.String("body", fmt.Sprintf("%#v", requestBody)))
+	var headerOk bool
+	var headerValue string
+	headerValue, headerOk = req.Header.Get("token")
+	if headerOk {
+		zfields = append(zfields, zap.String("token", headerValue))
+	}
+	headerValue, headerOk = req.Header.Get("uuid")
+	if headerOk {
+		zfields = append(zfields, zap.String("uuid", headerValue))
+	}
 	req.Logger.Debug("Endpoint request to downstream", zfields...)
 
 	workflow := SimpleServiceTransHeadersEndpoint{
@@ -140,6 +147,17 @@ func (w SimpleServiceTransHeadersEndpoint) Handle(
 	clientRequest = propagateHeadersTransHeadersClientRequests(clientRequest, reqHeaders)
 
 	clientHeaders := map[string]string{}
+
+	var ok bool
+	var h string
+	h, ok = reqHeaders.Get("token")
+	if ok {
+		clientHeaders["token"] = h
+	}
+	h, ok = reqHeaders.Get("uuid")
+	if ok {
+		clientHeaders["uuid"] = h
+	}
 
 	clientRespBody, _, err := w.Clients.Baz.TransHeaders(
 		ctx, clientHeaders, clientRequest,

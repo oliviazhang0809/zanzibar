@@ -75,6 +75,15 @@ func convertThriftPathToRelative(m *codegen.ModuleSpec) {
 	index := strings.LastIndex(m.ThriftFile, "zanzibar")
 	m.ThriftFile = m.ThriftFile[index:]
 
+	trimmedPkgs := make([]codegen.GoPackageImport, len(m.IncludedPackages))
+	for i, pkg := range m.IncludedPackages {
+		trimmedPkgs[i] = codegen.GoPackageImport{
+			AliasName:      pkg.AliasName,
+			PackageName:    pkg.PackageName,
+			CompiledModule: nil,
+		}
+	}
+	m.IncludedPackages = trimmedPkgs
 	for _, service := range m.Services {
 		service.CompileSpec = nil
 		service.ThriftFile = service.ThriftFile[index:]

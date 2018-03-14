@@ -26,6 +26,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	tmpl "text/template"
 
@@ -65,6 +66,7 @@ var defaultFuncMap = tmpl.FuncMap{
 	"unref":         unref,
 	"lintAcronym":   LintAcronym,
 	"args":          args,
+	"sortedHeaders": sortedHeaders,
 }
 
 func fullTypeName(typeName, packageName string) string {
@@ -81,6 +83,19 @@ func decrement(num int) int {
 func jsonMarshal(jsonObj map[string]interface{}) (string, error) {
 	str, err := json.Marshal(jsonObj)
 	return string(str), err
+}
+
+func sortedHeaders(headerMap map[string]*TypedHeader, filterRequired bool) []string {
+	var sortedArr []string
+	for k, v := range headerMap {
+		if !filterRequired {
+			sortedArr = append(sortedArr, k)
+		} else if v.Field.Required {
+			sortedArr = append(sortedArr, k)
+		}
+	}
+	sort.Strings(sortedArr)
+	return sortedArr
 }
 
 func isPointerType(t string) bool {

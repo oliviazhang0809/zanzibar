@@ -26,7 +26,6 @@ package bazendpoint
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	zanzibar "github.com/uber/zanzibar/runtime"
 	"go.uber.org/zap"
@@ -38,58 +37,47 @@ import (
 	module "github.com/uber/zanzibar/examples/example-gateway/build/endpoints/baz/module"
 )
 
-// SimpleServiceCallHandler is the handler for "/baz/call"
-type SimpleServiceCallHandler struct {
+// SimpleServiceHeaderSchemaHandler is the handler for "/baz/header-schema"
+type SimpleServiceHeaderSchemaHandler struct {
 	Clients  *module.ClientDependencies
 	endpoint *zanzibar.RouterEndpoint
 }
 
-// NewSimpleServiceCallHandler creates a handler
-func NewSimpleServiceCallHandler(deps *module.Dependencies) *SimpleServiceCallHandler {
-	handler := &SimpleServiceCallHandler{
+// NewSimpleServiceHeaderSchemaHandler creates a handler
+func NewSimpleServiceHeaderSchemaHandler(deps *module.Dependencies) *SimpleServiceHeaderSchemaHandler {
+	handler := &SimpleServiceHeaderSchemaHandler{
 		Clients: deps.Client,
 	}
 	handler.endpoint = zanzibar.NewRouterEndpoint(
 		deps.Default.Logger, deps.Default.Scope,
-		"baz", "call",
+		"baz", "headerSchema",
 		handler.HandleRequest,
 	)
 	return handler
 }
 
 // Register adds the http handler to the gateway's http router
-func (h *SimpleServiceCallHandler) Register(g *zanzibar.Gateway) error {
+func (h *SimpleServiceHeaderSchemaHandler) Register(g *zanzibar.Gateway) error {
 	g.HTTPRouter.Register(
-		"POST", "/baz/call",
+		"POST", "/baz/header-schema",
 		h.endpoint,
 	)
 	// TODO: register should return errors on route conflicts
 	return nil
 }
 
-// HandleRequest handles "/baz/call".
-func (h *SimpleServiceCallHandler) HandleRequest(
+// HandleRequest handles "/baz/header-schema".
+func (h *SimpleServiceHeaderSchemaHandler) HandleRequest(
 	ctx context.Context,
 	req *zanzibar.ServerHTTPRequest,
 	res *zanzibar.ServerHTTPResponse,
 ) {
-	var requestBody endpointsBazBaz.SimpleService_Call_Args
-	if ok := req.ReadAndUnmarshalBody(&requestBody); !ok {
+	if !req.CheckHeaders([]string{"auth", "content-type"}) {
 		return
 	}
-
-	if requestBody.Arg == nil {
-		requestBody.Arg = &endpointsBazBaz.BazRequest{}
-	}
-	xTokenValue, xTokenValueExists := req.Header.Get("x-token")
-	if xTokenValueExists {
-		body, _ := strconv.ParseInt(xTokenValue, 10, 64)
-		requestBody.I64Optional = &body
-	}
-	xUUIDValue, xUUIDValueExists := req.Header.Get("x-uuid")
-	if xUUIDValueExists {
-		body := endpointsBazBaz.UUID(xUUIDValue)
-		requestBody.TestUUID = &body
+	var requestBody endpointsBazBaz.SimpleService_HeaderSchema_Args
+	if ok := req.ReadAndUnmarshalBody(&requestBody); !ok {
+		return
 	}
 
 	// log endpoint request to downstream services
@@ -109,19 +97,33 @@ func (h *SimpleServiceCallHandler) HandleRequest(
 	if headerOk {
 		zfields = append(zfields, zap.String("X-Uuid", headerValue))
 	}
+	headerValue, headerOk = req.Header.Get("auth")
+	if headerOk {
+		zfields = append(zfields, zap.String("auth", headerValue))
+	}
+	headerValue, headerOk = req.Header.Get("content-type")
+	if headerOk {
+		zfields = append(zfields, zap.String("content-type", headerValue))
+	}
 	req.Logger.Debug("Endpoint request to downstream", zfields...)
 
-	workflow := SimpleServiceCallEndpoint{
+	workflow := SimpleServiceHeaderSchemaEndpoint{
 		Clients: h.Clients,
 		Logger:  req.Logger,
 		Request: req,
 	}
 
-	cliRespHeaders, err := workflow.Handle(ctx, req.Header, &requestBody)
+	response, cliRespHeaders, err := workflow.Handle(ctx, req.Header, &requestBody)
 	if err != nil {
 		switch errValue := err.(type) {
 
 		case *endpointsBazBaz.AuthErr:
+			res.WriteJSON(
+				401, cliRespHeaders, errValue,
+			)
+			return
+
+		case *endpointsBazBaz.OtherAuthErr:
 			res.WriteJSON(
 				403, cliRespHeaders, errValue,
 			)
@@ -134,23 +136,23 @@ func (h *SimpleServiceCallHandler) HandleRequest(
 
 	}
 
-	res.WriteJSONBytes(204, cliRespHeaders, nil)
+	res.WriteJSON(200, cliRespHeaders, response)
 }
 
-// SimpleServiceCallEndpoint calls thrift client Baz.Call
-type SimpleServiceCallEndpoint struct {
+// SimpleServiceHeaderSchemaEndpoint calls thrift client Baz.HeaderSchema
+type SimpleServiceHeaderSchemaEndpoint struct {
 	Clients *module.ClientDependencies
 	Logger  *zap.Logger
 	Request *zanzibar.ServerHTTPRequest
 }
 
 // Handle calls thrift client.
-func (w SimpleServiceCallEndpoint) Handle(
+func (w SimpleServiceHeaderSchemaEndpoint) Handle(
 	ctx context.Context,
 	reqHeaders zanzibar.Header,
-	r *endpointsBazBaz.SimpleService_Call_Args,
-) (zanzibar.Header, error) {
-	clientRequest := convertToCallClientRequest(r)
+	r *endpointsBazBaz.SimpleService_HeaderSchema_Args,
+) (*endpointsBazBaz.HeaderSchema, zanzibar.Header, error) {
+	clientRequest := convertToHeaderSchemaClientRequest(r)
 
 	clientHeaders := map[string]string{}
 
@@ -164,8 +166,16 @@ func (w SimpleServiceCallEndpoint) Handle(
 	if ok {
 		clientHeaders["X-Uuid"] = h
 	}
+	h, ok = reqHeaders.Get("auth")
+	if ok {
+		clientHeaders["auth"] = h
+	}
+	h, ok = reqHeaders.Get("content-type")
+	if ok {
+		clientHeaders["content-type"] = h
+	}
 
-	cliRespHeaders, err := w.Clients.Baz.Call(
+	clientRespBody, _, err := w.Clients.Baz.HeaderSchema(
 		ctx, clientHeaders, clientRequest,
 	)
 
@@ -173,12 +183,20 @@ func (w SimpleServiceCallEndpoint) Handle(
 		switch errValue := err.(type) {
 
 		case *clientsBazBaz.AuthErr:
-			serverErr := convertCallAuthErr(
+			serverErr := convertHeaderSchemaAuthErr(
 				errValue,
 			)
 			// TODO(sindelar): Consider returning partial headers
 
-			return nil, serverErr
+			return nil, nil, serverErr
+
+		case *clientsBazBaz.OtherAuthErr:
+			serverErr := convertHeaderSchemaOtherAuthErr(
+				errValue,
+			)
+			// TODO(sindelar): Consider returning partial headers
+
+			return nil, nil, serverErr
 
 		default:
 			w.Logger.Warn("Could not make client request",
@@ -188,7 +206,7 @@ func (w SimpleServiceCallEndpoint) Handle(
 
 			// TODO(sindelar): Consider returning partial headers
 
-			return nil, err
+			return nil, nil, err
 
 		}
 	}
@@ -198,32 +216,39 @@ func (w SimpleServiceCallEndpoint) Handle(
 	// TODO: Add support for TChannel Headers with a switch here
 	resHeaders := zanzibar.ServerHTTPHeader{}
 
-	resHeaders.Set("Some-Res-Header", cliRespHeaders["Some-Res-Header"])
-
-	return resHeaders, nil
+	response := convertSimpleServiceHeaderSchemaClientResponse(clientRespBody)
+	return response, resHeaders, nil
 }
 
-func convertToCallClientRequest(in *endpointsBazBaz.SimpleService_Call_Args) *clientsBazBaz.SimpleService_Call_Args {
-	out := &clientsBazBaz.SimpleService_Call_Args{}
+func convertToHeaderSchemaClientRequest(in *endpointsBazBaz.SimpleService_HeaderSchema_Args) *clientsBazBaz.SimpleService_HeaderSchema_Args {
+	out := &clientsBazBaz.SimpleService_HeaderSchema_Args{}
 
-	if in.Arg != nil {
-		out.Arg = &clientsBazBaz.BazRequest{}
-		out.Arg.B1 = bool(in.Arg.B1)
-		out.Arg.S2 = string(in.Arg.S2)
-		out.Arg.I3 = int32(in.Arg.I3)
+	if in.Req != nil {
+		out.Req = &clientsBazBaz.HeaderSchema{}
 	} else {
-		out.Arg = nil
+		out.Req = nil
 	}
-	out.I64Optional = (*int64)(in.I64Optional)
-	out.TestUUID = (*clientsBazBaz.UUID)(in.TestUUID)
 
 	return out
 }
 
-func convertCallAuthErr(
+func convertHeaderSchemaAuthErr(
 	clientError *clientsBazBaz.AuthErr,
 ) *endpointsBazBaz.AuthErr {
 	// TODO: Add error fields mapping here.
 	serverError := &endpointsBazBaz.AuthErr{}
 	return serverError
+}
+func convertHeaderSchemaOtherAuthErr(
+	clientError *clientsBazBaz.OtherAuthErr,
+) *endpointsBazBaz.OtherAuthErr {
+	// TODO: Add error fields mapping here.
+	serverError := &endpointsBazBaz.OtherAuthErr{}
+	return serverError
+}
+
+func convertSimpleServiceHeaderSchemaClientResponse(in *clientsBazBaz.HeaderSchema) *endpointsBazBaz.HeaderSchema {
+	out := &endpointsBazBaz.HeaderSchema{}
+
+	return out
 }

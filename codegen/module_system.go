@@ -40,10 +40,8 @@ type EndpointMeta struct {
 	ClientID           string
 	ClientMethodName   string
 	WorkflowName       string
-	ReqHeaderMap       map[string]string
-	ReqHeaderMapKeys   []string
-	ResHeaderMap       map[string]string
-	ResHeaderMapKeys   []string
+	ReqHeaders         map[string]*TypedHeader
+	ResHeaders         map[string]*TypedHeader
 }
 
 // EndpointCollectionMeta saves information used to generate an initializer
@@ -64,6 +62,8 @@ type EndpointTestMeta struct {
 	Instance           *ModuleInstance
 	Method             *MethodSpec
 	TestFixtures       map[string]*EndpointTestFixture `json:"testFixtures"`
+	ReqHeaders         map[string]*TypedHeader
+	ResHeaders         map[string]*TypedHeader
 	ClientName         string
 	ClientID           string
 	RelativePathToRoot string
@@ -881,10 +881,8 @@ func (g *EndpointGenerator) generateEndpointFile(
 		GatewayPackageName: g.packageHelper.GoGatewayPackageName(),
 		IncludedPackages:   includedPackages,
 		Method:             method,
-		ReqHeaderMap:       e.ReqHeaderMap,
-		ReqHeaderMapKeys:   e.ReqHeaderMapKeys,
-		ResHeaderMap:       e.ResHeaderMap,
-		ResHeaderMapKeys:   e.ResHeaderMapKeys,
+		ReqHeaders:         e.ReqHeaders,
+		ResHeaders:         e.ResHeaders,
 		ClientID:           clientID,
 		ClientName:         clientName,
 		ClientMethodName:   e.ClientMethod,
@@ -954,6 +952,8 @@ func (g *EndpointGenerator) generateEndpointTestFile(
 		Instance:     instance,
 		Method:       method,
 		TestFixtures: e.TestFixtures,
+		ReqHeaders:   e.ReqHeaders,
+		ResHeaders:   e.ResHeaders,
 		ClientID:     e.ClientSpec.ClientID,
 	}
 

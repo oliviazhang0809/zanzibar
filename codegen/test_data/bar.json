@@ -7,15 +7,18 @@
 	"IncludedPackages": [
 		{
 			"PackageName": "github.com/uber/zanzibar/examples/example-gateway/build/gen-code/clients/bar/bar",
-			"AliasName": "clientsBarBar"
+			"AliasName": "clientsBarBar",
+			"CompiledModule": null
 		},
 		{
 			"PackageName": "github.com/uber/zanzibar/examples/example-gateway/build/gen-code/clients/foo/foo",
-			"AliasName": "clientsFooFoo"
+			"AliasName": "clientsFooFoo",
+			"CompiledModule": null
 		},
 		{
 			"PackageName": "github.com/uber/zanzibar/examples/example-gateway/build/gen-code/clients/foo/base/base",
-			"AliasName": "clientsFooBaseBase"
+			"AliasName": "clientsFooBaseBase",
+			"CompiledModule": null
 		}
 	],
 	"Services": [
