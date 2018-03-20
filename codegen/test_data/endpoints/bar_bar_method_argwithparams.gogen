@@ -49,7 +49,7 @@ func NewBarArgWithParamsHandler(deps *module.Dependencies) *BarArgWithParamsHand
 		Clients: deps.Client,
 	}
 	handler.endpoint = zanzibar.NewRouterEndpoint(
-		deps.Default.Logger, deps.Default.Scope, deps.Default.Tracer,
+		deps.Default.Logger, deps.Default.Scope,
 		"bar", "argWithParams",
 		handler.HandleRequest,
 	)
