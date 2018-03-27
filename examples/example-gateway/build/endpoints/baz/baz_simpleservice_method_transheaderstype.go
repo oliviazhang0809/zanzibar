@@ -230,7 +230,7 @@ func convertSimpleServiceTransHeadersTypeClientResponse(in *clientsBazBaz.TransH
 }
 
 func propagateHeadersTransHeadersTypeClientRequests(in *clientsBazBaz.SimpleService_TransHeadersType_Args, headers zanzibar.Header) *clientsBazBaz.SimpleService_TransHeadersType_Args {
-	if key, ok := headers.Get("x-boolean"); ok {
+	if key, ok := headers.Get("X-Boolean"); ok {
 		if in.Req == nil {
 			in.Req = &clientsBazBaz.TransHeaderType{}
 		}
@@ -239,7 +239,7 @@ func propagateHeadersTransHeadersTypeClientRequests(in *clientsBazBaz.SimpleServ
 		}
 
 	}
-	if key, ok := headers.Get("x-float"); ok {
+	if key, ok := headers.Get("X-Float"); ok {
 		if in.Req == nil {
 			in.Req = &clientsBazBaz.TransHeaderType{}
 		}
@@ -248,7 +248,7 @@ func propagateHeadersTransHeadersTypeClientRequests(in *clientsBazBaz.SimpleServ
 		}
 
 	}
-	if key, ok := headers.Get("x-int"); ok {
+	if key, ok := headers.Get("X-Int"); ok {
 		if in.Req == nil {
 			in.Req = &clientsBazBaz.TransHeaderType{}
 		}
@@ -258,7 +258,7 @@ func propagateHeadersTransHeadersTypeClientRequests(in *clientsBazBaz.SimpleServ
 		}
 
 	}
-	if key, ok := headers.Get("x-int"); ok {
+	if key, ok := headers.Get("X-Int"); ok {
 		if in.Req == nil {
 			in.Req = &clientsBazBaz.TransHeaderType{}
 		}
@@ -267,14 +267,14 @@ func propagateHeadersTransHeadersTypeClientRequests(in *clientsBazBaz.SimpleServ
 		}
 
 	}
-	if key, ok := headers.Get("x-string"); ok {
+	if key, ok := headers.Get("X-String"); ok {
 		if in.Req == nil {
 			in.Req = &clientsBazBaz.TransHeaderType{}
 		}
 		in.Req.S6 = key
 
 	}
-	if key, ok := headers.Get("x-string"); ok {
+	if key, ok := headers.Get("X-String"); ok {
 		if in.Req == nil {
 			in.Req = &clientsBazBaz.TransHeaderType{}
 		}
@@ -282,7 +282,7 @@ func propagateHeadersTransHeadersTypeClientRequests(in *clientsBazBaz.SimpleServ
 		in.Req.U4 = val
 
 	}
-	if key, ok := headers.Get("x-string"); ok {
+	if key, ok := headers.Get("X-String"); ok {
 		if in.Req == nil {
 			in.Req = &clientsBazBaz.TransHeaderType{}
 		}

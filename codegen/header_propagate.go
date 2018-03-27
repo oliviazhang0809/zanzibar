@@ -27,6 +27,7 @@ import (
 
 	"github.com/pkg/errors"
 	"go.uber.org/thriftrw/compile"
+	"net/textproto"
 )
 
 // HeaderPropagator generates function propagates endpoint request
@@ -70,7 +71,9 @@ func (hp *HeaderPropagator) Propagate(
 				val.QualifiedName, field.Name)
 		}
 
-		hp.appendf(`if key, ok := headers.Get("%s"); ok {`, val.QualifiedName)
+		vname := textproto.CanonicalMIMEHeaderKey(val.QualifiedName)
+
+		hp.appendf(`if key, ok := headers.Get("%s"); ok {`, vname)
 		// patch optional params along the path
 		if err := hp.initNilOpt(key, toFields); err != nil {
 			return err
