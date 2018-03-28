@@ -140,7 +140,7 @@ func (w GoogleNowAddCredentialsEndpoint) Handle(
 	var h string
 	h, ok = reqHeaders.Get("X-Token")
 	if ok {
-		clientHeaders["X-Token"] = h
+		clientHeaders["x-token"] = h
 	}
 	h, ok = reqHeaders.Get("X-Uuid")
 	if ok {

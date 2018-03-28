@@ -156,11 +156,11 @@ func (w SimpleServiceTransHeadersEndpoint) Handle(
 	var h string
 	h, ok = reqHeaders.Get("Token")
 	if ok {
-		clientHeaders["Token"] = h
+		clientHeaders["token"] = h
 	}
 	h, ok = reqHeaders.Get("Uuid")
 	if ok {
-		clientHeaders["Uuid"] = h
+		clientHeaders["uuid"] = h
 	}
 	h, ok = reqHeaders.Get("X-Zanzibar-Use-Staging")
 	if ok {

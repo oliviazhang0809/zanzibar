@@ -722,7 +722,7 @@ func resolveHeaderModels(ms *ModuleSpec, modelPath string) (map[string]*TypedHea
 			headerKey := textproto.CanonicalMIMEHeaderKey(*hk)
 			typedHeaders[headerKey] = &TypedHeader{
 				Name:        headerKey,
-				TransformTo: headerKey,
+				TransformTo: strings.ToLower(headerKey),
 				Field:       field,
 			}
 		}

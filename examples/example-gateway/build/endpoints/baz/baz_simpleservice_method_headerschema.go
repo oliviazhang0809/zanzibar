@@ -164,19 +164,19 @@ func (w SimpleServiceHeaderSchemaEndpoint) Handle(
 	var h string
 	h, ok = reqHeaders.Get("Auth")
 	if ok {
-		clientHeaders["Auth"] = h
+		clientHeaders["auth"] = h
 	}
 	h, ok = reqHeaders.Get("Content-Type")
 	if ok {
-		clientHeaders["Content-Type"] = h
+		clientHeaders["content-type"] = h
 	}
 	h, ok = reqHeaders.Get("X-Token")
 	if ok {
-		clientHeaders["X-Token"] = h
+		clientHeaders["x-token"] = h
 	}
 	h, ok = reqHeaders.Get("X-Uuid")
 	if ok {
-		clientHeaders["X-Uuid"] = h
+		clientHeaders["x-uuid"] = h
 	}
 	h, ok = reqHeaders.Get("X-Zanzibar-Use-Staging")
 	if ok {
